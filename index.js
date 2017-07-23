@@ -1,4 +1,8 @@
-const jwt = require('jsonwebtoken');
+const promise = require('bluebird');
+const jwt     = require('jsonwebtoken');
+
+// change this to make the token expire
+const timer = 1000;
 
 const payload = {
     'userId'      : 2,
@@ -9,31 +13,13 @@ const payload = {
 const SECRET = 'ohsosecret';
 
 const options = {
-    'expiresIn': '5s'
+    'expiresIn': '2s'
 };
 
-const token = jwt.sign(payload, SECRET, options);
+promise.promisifyAll(jwt);
 
-console.info('token created');
-console.log(token);
-
-setTimeout(function () {
-    verifyJWT(payload, SECRET)
-        .then((jwt) => {
-            console.log(jwt);
-        })
-        .catch(err => console.error(err));
-}, 3000);
-
-function verifyJWT(payload, SECRET) {
-    return new Promise((resolve, reject) => {
-        jwt.verify(token, SECRET, (err, jwt) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            resolve(jwt);
-        })
-    });
-}
+jwt.signAsync(payload, SECRET, options)
+    .tap(() => promise.delay(timer))
+    .then((token) => jwt.verifyAsync(token, SECRET))
+    .catch(err => console.error(err))
+    .done((token) => console.log(token));
